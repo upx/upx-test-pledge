@@ -83,6 +83,7 @@ upx_cache_bool_vars(OFF
     UPX_CONFIG_CMAKE_DISABLE_TEST UPX_CONFIG_CMAKE_DISABLE_INSTALL
     UPX_CONFIG_CMAKE_DISABLE_PRINT_INFO UPX_CONFIG_CMAKE_DISABLE_PLATFORM_CHECK
     UPX_CONFIG_DISABLE_C_STANDARD UPX_CONFIG_DISABLE_CXX_STANDARD
+    UPX_CONFIG_EXPECT_PLEDGE UPX_CONFIG_REQUIRE_PLEDGE
     UPX_CONFIG_EXPECT_THREADS UPX_CONFIG_REQUIRE_THREADS
 )
 
@@ -247,6 +248,28 @@ set(UPX_CONFIG_DISABLE_ZSTD ON)    # zstd is currently not used; maybe in UPX ve
 
 upx_cmake_include_hook(4_targets)
 
+set(UPX_CONFIG_DISABLE_PLEDGE ON)
+if(NOT WIN32 AND NOT MINGW AND NOT CYGWIN)
+    if(NOT DEFINED HAVE_ELF_H)
+        check_include_file("elf.h" HAVE_ELF_H)
+    endif()
+    if(HAVE_ELF_H)
+        set(UPX_CONFIG_DISABLE_PLEDGE OFF)
+        foreach(f calls/pledge.c calls/pledge-linux.c calls/unveil.c)
+            set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY") # added in CMake 3.6
+            try_compile(result "${CMAKE_CURRENT_BINARY_DIR}"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/vendor/pledge/libc/${f}"
+                        OUTPUT_VARIABLE output
+                        COMPILE_DEFINITIONS "\"-I${CMAKE_CURRENT_SOURCE_DIR}/vendor/pledge\" -D_GNU_SOURCE")
+            if(NOT result)
+                #message(STATUS "${output}") # debug output from try_compile
+                set(UPX_CONFIG_DISABLE_PLEDGE ON)
+                break()
+            endif()
+        endforeach()
+    endif()
+endif()
+
 if(NOT UPX_CONFIG_DISABLE_THREADS)
     find_package(Threads)
 endif()
@@ -273,6 +296,14 @@ if(NOT UPX_CONFIG_DISABLE_C_STANDARD)
     set_property(TARGET upx_vendor_bzip2 PROPERTY C_STANDARD 11)
 endif()
 endif() # UPX_CONFIG_DISABLE_BZIP2
+
+if(NOT UPX_CONFIG_DISABLE_PLEDGE)
+upx_add_glob_files(pledge_SOURCES "vendor/pledge/libc/*/*.c")
+add_library(upx_vendor_pledge STATIC ${pledge_SOURCES})
+if(NOT UPX_CONFIG_DISABLE_C_STANDARD)
+    set_property(TARGET upx_vendor_pledge PROPERTY C_STANDARD 11)
+endif()
+endif() # UPX_CONFIG_DISABLE_PLEDGE
 
 upx_add_glob_files(ucl_SOURCES "vendor/ucl/src/*.c")
 add_library(upx_vendor_ucl STATIC ${ucl_SOURCES})
@@ -303,6 +334,9 @@ target_link_libraries(upx upx_vendor_ucl upx_vendor_zlib)
 if(NOT UPX_CONFIG_DISABLE_BZIP2)
     target_link_libraries(upx upx_vendor_bzip2)
 endif()
+if(NOT UPX_CONFIG_DISABLE_PLEDGE)
+    target_link_libraries(upx upx_vendor_pledge)
+endif()
 if(NOT UPX_CONFIG_DISABLE_ZSTD)
     target_link_libraries(upx upx_vendor_zstd)
 endif()
@@ -327,6 +361,20 @@ else()
     target_compile_options(${t} PRIVATE ${warn_Wall} ${warn_Werror})
 endif()
 endif() # UPX_CONFIG_DISABLE_BZIP2
+
+if(NOT UPX_CONFIG_DISABLE_PLEDGE)
+set(t upx_vendor_pledge)
+target_include_directories(${t} PRIVATE vendor/pledge)
+upx_compile_target_debug_with_O2(${t})
+upx_sanitize_target(${t})
+target_compile_definitions(${t} PRIVATE _GNU_SOURCE=1)
+if(MSVC_FRONTEND)
+    target_compile_options(${t} PRIVATE ${warn_WN} ${warn_WX})
+else()
+    ##target_compile_options(${t} PRIVATE -Wall ${warn_Werror})
+    target_compile_options(${t} PRIVATE ${warn_Wall} -Wno-cast-qual -Wno-missing-declarations -Wno-sign-compare ${warn_Werror}) # TODO later: fix warnings
+endif()
+endif() # UPX_CONFIG_DISABLE_PLEDGE
 
 set(t upx_vendor_ucl)
 target_include_directories(${t} PRIVATE vendor/ucl/include vendor/ucl)
@@ -384,6 +432,9 @@ if(NOT UPX_CONFIG_DISABLE_WERROR)
 endif()
 if(NOT UPX_CONFIG_DISABLE_BZIP2)
     target_compile_definitions(${t} PRIVATE WITH_BZIP2=1)
+endif()
+if(NOT UPX_CONFIG_DISABLE_PLEDGE)
+    target_compile_definitions(${t} PRIVATE WITH_PLEDGE=1)
 endif()
 if(NOT UPX_CONFIG_DISABLE_ZSTD)
     target_compile_definitions(${t} PRIVATE WITH_ZSTD=1)
@@ -494,6 +545,13 @@ upx_print_var(CMAKE_INTERPROCEDURAL_OPTIMIZATION CMAKE_POSITION_INDEPENDENT_CODE
 upx_print_var(CYGWIN GNUC MINGW MSVC MSVC_FRONTEND MSVC_IDE WIN32 WIN64)
 endif() # UPX_CONFIG_CMAKE_DISABLE_PRINT_INFO
 upx_print_var(CMAKE_INSTALL_PREFIX CMAKE_CONFIGURATION_TYPES CMAKE_BUILD_TYPE)
+if(NOT UPX_CONFIG_DISABLE_PLEDGE)
+    message(STATUS "WITH_PLEDGE = 1")
+elseif(UPX_CONFIG_REQUIRE_PLEDGE)
+    message(FATAL_ERROR "ERROR: WITH_PLEDGE required")
+elseif(UPX_CONFIG_EXPECT_PLEDGE AND NOT UPX_CONFIG_DISABLE_PLEDGE)
+    message(FATAL_ERROR "ERROR: WITH_PLEDGE expected")
+endif()
 if(Threads_FOUND)
     message(STATUS "WITH_THREADS = 1")
 elseif(UPX_CONFIG_REQUIRE_THREADS)

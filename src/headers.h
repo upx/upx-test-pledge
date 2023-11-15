@@ -139,6 +139,10 @@ static_assert(sizeof(void *) == 8);
 #include <sstream>
 #include <boost/pfr/io.hpp>
 #endif
+#if WITH_PLEDGE
+#include <pledge/libc/calls/calls.h>
+#include <pledge/libc/calls/pledge.h>
+#endif
 #if WITH_RANGELESS_FN
 #include <rangeless/include/fn.hpp>
 #endif

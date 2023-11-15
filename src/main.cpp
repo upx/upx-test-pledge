@@ -1346,6 +1346,21 @@ int _dowildcard = -1;
 #endif
 
 int __acc_cdecl_main main(int argc, char *argv[]) /*noexcept*/ {
+#if (WITH_PLEDGE)
+    bool disable_pledge = false;
+    const char *ee = getenv("UPX_DEBUG_DISABLE_PLEDGE");
+    if (ee && ee[0] && strcmp(ee, "0") != 0)
+        disable_pledge = true;
+    if (!disable_pledge) {
+        __pledge_mode = PLEDGE_PENALTY_KILL_PROCESS | PLEDGE_STDERR_LOGGING;
+        if (pledge("chown cpath fattr rpath stdio tty wpath", nullptr) != 0) {
+            perror("pledge");
+            fprintf(stderr, "upx: FATAL ERROR: pledge() failed\n");
+            exit(EXIT_FATAL);
+        }
+    }
+#endif
+
 #if 0 && (ACC_OS_DOS32) && defined(__DJGPP__)
     // LFN=n may cause problems with 2.03's _rename and mkdir under WinME
     putenv("LFN=y");
@@ -1358,7 +1373,7 @@ int __acc_cdecl_main main(int argc, char *argv[]) /*noexcept*/ {
     // srand((int) time(nullptr));
     srand((int) clock());
 
-    // info: main() is implicitly "noexcept", so we need a try block
+// info: main() is implicitly "noexcept", so we need a try block
 #if 0
     int r = upx_main(argc, argv);
 #else

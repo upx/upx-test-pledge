@@ -537,6 +537,9 @@ void show_sysinfo(const char *options_var) {
 #if defined(UPX_CONFIG_DISABLE_WERROR)
         cf_print("UPX_CONFIG_DISABLE_WERROR", "%lld", UPX_CONFIG_DISABLE_WERROR + 0, 3);
 #endif
+#if defined(WITH_PLEDGE)
+        cf_print("WITH_PLEDGE", "%lld", WITH_PLEDGE + 0);
+#endif
 #if defined(WITH_THREADS)
         cf_print("WITH_THREADS", "%lld", WITH_THREADS + 0);
 #endif

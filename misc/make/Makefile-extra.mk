@@ -278,7 +278,7 @@ endif # bug work-around
 # check git submodules
 #***********************************************************************
 
-SUBMODULES = doctest lzma-sdk ucl valgrind zlib
+SUBMODULES = doctest lzma-sdk pledge ucl valgrind zlib
 
 $(foreach 1,$(SUBMODULES),$(if $(wildcard vendor/$1/[CL]*),,\
     $(error ERROR: missing git submodule '$1'; run 'git submodule update --init')))

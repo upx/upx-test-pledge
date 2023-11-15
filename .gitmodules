@@ -8,6 +8,11 @@
     url = https://github.com/upx/upx-vendor-lzma-sdk.git
     branch = upx-vendor
     shallow = true
+[submodule "vendor/pledge"]
+    path = vendor/pledge
+    url = https://github.com/upx/upx-vendor-pledge.git
+    branch = upx-vendor
+    shallow = true
 [submodule "vendor/ucl"]
     path = vendor/ucl
     url = https://github.com/upx/upx-vendor-ucl.git

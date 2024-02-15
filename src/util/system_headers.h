@@ -154,6 +154,10 @@ static_assert(sizeof(void *) == sizeof(long));
 
 // UPX vendor git submodule headers
 #include <doctest/doctest/parts/doctest_fwd.h>
+#if WITH_PLEDGE
+#include <pledge/libc/calls/calls.h>
+#include <pledge/libc/calls/pledge.h>
+#endif
 #ifndef WITH_VALGRIND
 #define WITH_VALGRIND 1
 #endif

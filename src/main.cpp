@@ -1345,6 +1345,34 @@ int _dowildcard = -1;
 #endif
 
 int __acc_cdecl_main main(int argc, char *argv[]) /*noexcept*/ {
+#if (WITH_PLEDGE)
+    bool disable_pledge = false;
+    const char *ee = getenv("UPX_DEBUG_DISABLE_PLEDGE");
+    if (ee && ee[0] && strcmp(ee, "0") != 0)
+        disable_pledge = true;
+#if (WITH_VALGRIND) && defined(RUNNING_ON_VALGRIND)
+    if (!disable_pledge && RUNNING_ON_VALGRIND) {
+        if (ee && ee[0] && strcmp(ee, "0") == 0) {
+            // explicit "UPX_DEBUG_DISABLE_PLEDGE=0"
+            fprintf(stderr,
+                    "upx: NOTE: detected RUNNING_ON_VALGRIND, but pledge explicitly ENABLED.\n");
+        } else {
+            // TODO later: revisit this once valgrind supports the necessary syscalls
+            fprintf(stderr, "upx: NOTE: detected RUNNING_ON_VALGRIND, pledge disabled.\n");
+            disable_pledge = true;
+        }
+    }
+#endif
+    if (!disable_pledge) {
+        __pledge_mode = PLEDGE_PENALTY_KILL_PROCESS | PLEDGE_STDERR_LOGGING;
+        if (pledge("chown cpath fattr rpath stdio tty wpath", nullptr) != 0) {
+            perror("pledge");
+            fprintf(stderr, "upx: FATAL ERROR: pledge() failed\n");
+            exit(EXIT_FATAL);
+        }
+    }
+#endif
+
 #if 0 && (ACC_OS_DOS32) && defined(__DJGPP__)
     // LFN=n may cause problems with 2.03's _rename and mkdir under WinME
     putenv("LFN=y");
@@ -1360,7 +1388,7 @@ int __acc_cdecl_main main(int argc, char *argv[]) /*noexcept*/ {
     srand((int) clock());
 #endif
 
-    // info: main() is implicitly "noexcept", so we need a try block
+// info: main() is implicitly "noexcept", so we need a try block
 #if 0
     int r = upx_main(argc, argv);
 #else

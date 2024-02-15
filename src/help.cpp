@@ -525,6 +525,10 @@ void show_version(bool one_line) {
     // see vendor/doctest/LICENSE.txt
     fprintf(f, "Copyright (C) 2016" "-2023 Viktor Kirilov\n");
 #endif
+#if (WITH_PLEDGE)
+    // see vendor/pledge/LICENSE
+    fprintf(f, "Copyright (C) 2020 Justine Alexandra Roberts Tunney\n");
+#endif
     // clang-format on
     fprintf(f, "UPX comes with ABSOLUTELY NO WARRANTY; for details type '%s -L'.\n", progname);
 }
@@ -693,6 +697,9 @@ void show_sysinfo(const char *options_var) {
 #endif
 #if defined(UPX_CONFIG_DISABLE_WERROR)
         cf_print("UPX_CONFIG_DISABLE_WERROR", "%lld", UPX_CONFIG_DISABLE_WERROR + 0, 3);
+#endif
+#if defined(WITH_PLEDGE)
+        cf_print("WITH_PLEDGE", "%lld", WITH_PLEDGE + 0);
 #endif
 #if defined(WITH_THREADS)
         cf_print("WITH_THREADS", "%lld", WITH_THREADS + 0);

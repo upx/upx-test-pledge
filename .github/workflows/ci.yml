@@ -91,13 +91,13 @@ jobs:
       - name: 'Check out test suite'
         run:  'git clone --depth=1 https://github.com/upx/upx-testsuite ../deps/upx-testsuite'
       - name: 'Build extra/gcc/debug'
-        run:  'make build/extra/gcc/debug'
+        run:  'UPX_CONFIG_EXPECT_PLEDGE=ON make build/extra/gcc/debug'
       - name: 'Build extra/gcc/release'
-        run:  'make build/extra/gcc/release'
+        run:  'UPX_CONFIG_EXPECT_PLEDGE=ON make build/extra/gcc/release'
       - name: 'Build extra/clang/debug'
-        run:  'make build/extra/clang/debug'
+        run:  'UPX_CONFIG_EXPECT_PLEDGE=ON make build/extra/clang/debug'
       - name: 'Build extra/clang/release'
-        run:  'make build/extra/clang/release'
+        run:  'UPX_CONFIG_EXPECT_PLEDGE=ON make build/extra/clang/release'
       - name: 'Build extra/gcc-m32/debug'
         if: ${{ matrix.use_m32 }}
         run:  'make build/extra/gcc-m32/debug'
@@ -505,6 +505,11 @@ jobs:
           echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
           # this seems to be needed when running in a container (beause of UID mismatch??)
           git config --global --add safe.directory '*'
+          # pledge
+          case "${{ matrix.zig_target }}" in
+            aarch64-linux-*) echo "UPX_CONFIG_EXPECT_PLEDGE=ON" >> $GITHUB_ENV ;;
+            x86_64-linux-*)  echo "UPX_CONFIG_EXPECT_PLEDGE=ON" >> $GITHUB_ENV ;;
+          esac
       - name: 'Check out code'
         uses: actions/checkout@v4
         with: { submodules: true }

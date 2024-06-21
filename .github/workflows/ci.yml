@@ -204,8 +204,8 @@ jobs:
       - run: clang++ -E -x c++ -dM /dev/null # list predefined macros for C++
       - run: gcc     -E -x c   -dM /dev/null # list predefined macros for C
       - run: g++     -E -x c++ -dM /dev/null # list predefined macros for C++
-      - run: make build/extra/gcc/all
-      - run: make build/extra/clang/all
+      - run: UPX_CONFIG_EXPECT_PLEDGE=ON make build/extra/gcc/all
+      - run: UPX_CONFIG_EXPECT_PLEDGE=ON make build/extra/clang/all
       - run: make build/extra/gcc-m32/all
         if: ${{ matrix.use_extra }}
       - run: make build/extra/gcc-mx32/all
@@ -668,6 +668,11 @@ jobs:
           echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
           git config --global --add safe.directory '*' # needed when running in a container
           mkdir -p ~/.parallel && : > ~/.parallel/$(echo 6305-4721 | tr 0-7 leticlwi)
+          # pledge
+          case "${{ matrix.zig_target }}" in
+            aarch64-linux-*) echo "UPX_CONFIG_EXPECT_PLEDGE=ON" >> $GITHUB_ENV ;;
+            x86_64-linux-*)  echo "UPX_CONFIG_EXPECT_PLEDGE=ON" >> $GITHUB_ENV ;;
+          esac
       - run: (sudo dmidecode | sed -n -e '/System Information/,/^$/p') || true
       - uses: actions/checkout@v6
         with: { submodules: true }

@@ -79,6 +79,11 @@ jobs:
           echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
           git config --global --add safe.directory '*' # needed when running in a container
           mkdir -p ~/.parallel && : > ~/.parallel/$(echo 6305-4721 | tr 0-7 leticlwi)
+          # pledge
+          case "${{ matrix.zig_target }}" in
+            aarch64-linux-*) echo "UPX_CONFIG_EXPECT_PLEDGE=ON" >> $GITHUB_ENV ;;
+            x86_64-linux-*)  echo "UPX_CONFIG_EXPECT_PLEDGE=ON" >> $GITHUB_ENV ;;
+          esac
       - name: 'Check out code'
         run: |
           git clone --branch "$GITHUB_REF_NAME" --depth 1 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" .
